@@ -1,22 +1,70 @@
-@import url('https://fonts.googleapis.com/css2?family=Comic+Relief:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Coming+Soon&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Tuffy:ital,wght@0,400;0,700;1,400;1,700&display=swap');
-*{
-    margin: 0px;
-    padding: 0px;
-    font-family: "Comic Relief", system-ui;
-    font-weight: 400;
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Tuffy", sans-serif;
     font-style: normal;
 }
 
-body{
-    background-color:#a299ff;
+body {
+    background-color: #a299ff;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
     background-image:
-    radial-gradient(at 50% 60%, hsla(335,91%,62%,1) 0px, transparent 50%),
-    radial-gradient(at 71% 8%, hsla(223,48%,55%,1) 0px, transparent 50%),
-    radial-gradient(at 61% 58%, hsla(16,85%,66%,1) 0px, transparent 50%),
-    radial-gradient(at 92% 63%, hsla(231,88%,74%,1) 0px, transparent 50%),
-    radial-gradient(at 26% 98%, hsla(222,88%,67%,1) 0px, transparent 50%),
-    radial-gradient(at 11% 55%, hsla(354,91%,70%,1) 0px, transparent 50%),
-    radial-gradient(at 49% 38%, hsla(87,89%,76%,1) 0px, transparent 50%);
-    height: 50vw;
+        radial-gradient(at 50% 60%, hsla(335,91%,62%,1) 0px, transparent 50%),
+        radial-gradient(at 71% 8%, hsla(223,48%,55%,1) 0px, transparent 50%),
+        radial-gradient(at 61% 58%, hsla(16,85%,66%,1) 0px, transparent 50%),
+        radial-gradient(at 92% 63%, hsla(231,88%,74%,1) 0px, transparent 50%),
+        radial-gradient(at 26% 98%, hsla(222,88%,67%,1) 0px, transparent 50%),
+        radial-gradient(at 11% 55%, hsla(354,91%,70%,1) 0px, transparent 50%),
+        radial-gradient(at 49% 38%, hsla(87,89%,76%,1) 0px, transparent 50%);
+}
+
+.form {
+    width: 100%;
+    max-width: 600px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+.form input {
+    border-style: none;
+    width: 100%;
+    outline: none;
+    padding: 20px;
+    font-size: 18px;
+    margin-bottom: 20px;
+}
+
+.btn_gen {
+    background-color: #B29AF9;
+    border-style: none;
+    width: 100%;
+    font-size: 15px;
+    border: none;
+    padding: 0.5rem 1.2rem;
+    border-radius: 0.25rem;
+    font-weight: 300;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0.25rem 0.25rem #121212;
+    max-width: 200px;
+}
+
+.btn_gen:active {
+    transform: translate(0.125rem, 0.125rem);
+    box-shadow: 0.125rem 0.125rem #121212;
+}
+
+.btn_gen:hover {
+    background-color: #9b7ef0;
+    transform: translateY(-2px);
 }

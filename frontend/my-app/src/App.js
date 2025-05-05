@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import './App.css';
 
+
 function App() {
   const [longUrl, setLongUrl] = useState('');
   const [shortUrl, setShortUrl] = useState('');
@@ -25,20 +26,13 @@ function App() {
   };
 
   return (
-    <div class="form">
-      <h1>Генерация короткой ссылки</h1>
-      <div class="generate">
+    <div className="container">
+      <div className="form">
         <form onSubmit={handleSubmit}>
-          <input type="text" value={longUrl} onChange={(e) => setLongUrl(e.target.value)} placeholder="Enter long URL"/>
-          <button type="submit">Скоротать</button>
+          <input type="text" value={longUrl} onChange={(e) => setLongUrl(e.target.value)} placeholder="Введите вашу ссылочку"/>
+          <input type="text" value={shortUrl} onChange={(e) => setLongUrl(e.target.value)} placeholder="Ваша короткая ссылочка"/>
+          <button className="btn_gen" type="submit">Скоротать</button>
         </form>
-        {shortUrl && (
-          <div>
-             <a href={shortUrl} target="_blank" rel="noopener noreferrer">
-               {shortUrl}
-             </a>
-           </div>
-        )}
       </div>
     </div>
   );
