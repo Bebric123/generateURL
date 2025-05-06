@@ -1,5 +1,6 @@
-import './Header.css';
-import logo from './img/logo.png';
+import '../css/Header.css';
+import logo from '../img/logo.png';
+import { Link } from 'react-router-dom'
 
 function Header() {
   return (
@@ -8,10 +9,9 @@ function Header() {
         <img src={logo} alt='logotip' className="logo" />
         <p className='name'>DeGenerateURL</p>
         <ul className="list">
-          <li>Главная</li>
+          <li><Link class="navi" to="/">Главная</Link></li>
+          <li><Link class="navi" to="/history">История</Link>  </li>
           <li>Статистика</li>
-          <li>История</li>
-          <li>URL</li>
           <li>Кастомизация</li>
         </ul>
         
