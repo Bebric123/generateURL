@@ -7,10 +7,11 @@ import secrets
 import hashlib
 import datetime
 import json
-from typing import List
+import logging
 
 app = FastAPI()
 r = redis.Redis(host='localhost', port=6379, db=0)
+logging.basicConfig(level=logging.INFO, filename='py_log.log', filemode='w', format="%(asctime)s %(levelname)s %(message)s")
 
 app.add_middleware(
     CORSMiddleware,
@@ -45,6 +46,7 @@ async def shorten_url(request: UrlRequest):
     }
 
     r.rpush(user_key, json.dumps(link_data)) 
+    logging.info(f"generate url {short_key}")
     return {'short_url': link_data['short_url']}
 
 @app.post("/user/links")
@@ -56,6 +58,7 @@ async def get_user_links(request: UserLinksRequest):
 @app.get("/{short_key}")
 async def redirect(short_key: str):
     long_url = r.get(short_key)
+    logging.info(f"redirecting")
     if not long_url:
         raise HTTPException(status_code=404)
     return RedirectResponse(url=long_url.decode())

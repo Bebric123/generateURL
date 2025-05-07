@@ -11,8 +11,8 @@ function Header() {
         <ul className="list">
           <li><Link class="navi" to="/">Главная</Link></li>
           <li><Link class="navi" to="/history">История</Link>  </li>
-          <li>Статистика</li>
-          <li>Кастомизация</li>
+          <li><Link class="navi" to="/statistic">Статистика</Link>  </li>
+          <li><Link class="navi" to="/statistic">Кастомизация</Link>  </li>
         </ul>
         
         <div className='btn-nav'>
