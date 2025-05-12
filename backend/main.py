@@ -8,10 +8,19 @@ import hashlib
 import datetime
 import json
 import logging
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 app = FastAPI()
 r = redis.Redis(host='localhost', port=6379, db=0)
 logging.basicConfig(level=logging.INFO, filename='py_log.log', filemode='w', format="%(asctime)s %(levelname)s %(message)s")
+
+SMTP_SERVER = "smtp.gmail.com"
+SMTP_PORT = 587
+SMTP_USERNAME = "swooplida@gmail.com"
+SMTP_PASSWORD = "gvev ltnr iojj ciie"
+EMAIL_FROM = "swooplida@gmail.com"
 
 app.add_middleware(
     CORSMiddleware,
@@ -25,13 +34,40 @@ class UrlRequest(BaseModel):
     email: str
 
 class UserLinksRequest(BaseModel):
-    email:str
+    email: str
 
 def generate_short_key():
     return secrets.token_urlsafe(5)[:8]
 
 def get_user_key(email: str) -> str:
     return f"user:{hashlib.sha256(email.encode()).hexdigest()}"
+
+def send_email_notification(email_to: str, short_url: str, long_url: str):
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = EMAIL_FROM
+        msg['To'] = email_to
+        msg['Subject'] = "Ваша ссылка была успешно сокращена"
+        
+        body = f"""
+        <h1>Ваша ссылка была сокращена!</h1>
+        <p><strong>Оригинальная ссылка:</strong> {long_url}</p>
+        <p><strong>Сокращенная ссылка:</strong> <a href="{short_url}">{short_url}</a></p>
+        <p>Дата создания: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}</p>
+        """
+        
+        msg.attach(MIMEText(body, 'html'))
+        
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            server.starttls() 
+            server.login(SMTP_USERNAME, SMTP_PASSWORD)
+            server.send_message(msg)
+            
+        logging.info(f"Email sent to {email_to}")
+        return True
+    except Exception as e:
+        logging.error(f"Failed to send email: {str(e)}")
+        return False
 
 @app.post("/shorten")
 async def shorten_url(request: UrlRequest):  
@@ -46,7 +82,14 @@ async def shorten_url(request: UrlRequest):
     }
 
     r.rpush(user_key, json.dumps(link_data)) 
-    logging.info(f"generate url {short_key}")
+    logging.info(f"Generated url {short_key}")
+    
+    send_email_notification(
+        email_to=request.email,
+        short_url=link_data['short_url'],
+        long_url=request.long_url
+    )
+    
     return {'short_url': link_data['short_url']}
 
 @app.post("/user/links")
@@ -58,7 +101,7 @@ async def get_user_links(request: UserLinksRequest):
 @app.get("/{short_key}")
 async def redirect(short_key: str):
     long_url = r.get(short_key)
-    logging.info(f"redirecting")
+    logging.info(f"Redirecting from {short_key}")
     if not long_url:
         raise HTTPException(status_code=404)
     return RedirectResponse(url=long_url.decode())
