@@ -11,3 +11,8 @@ class LinkResponse(BaseModel):
     short_url: str
     long_url: str
     created_at: str
+
+class LinkStatsRequest(BaseModel):
+    email: str
+    short_url: str
+    period: str 

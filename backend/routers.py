@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import RedirectResponse
 from services import r, generate_short_key, get_user_key, send_email_notification
-from schemas import UrlRequest, UserLinksRequest
+from schemas import UrlRequest, UserLinksRequest, LinkStatsRequest
 from config import Settings
 import json
 from datetime import datetime, timedelta
@@ -19,7 +19,7 @@ def deactivate_expired_links():
         created_at = r.get(f"created_at:{key_str}")
         if created_at:
             created_at = datetime.fromisoformat(created_at.decode())
-            if (now - created_at) > timedelta(minutes=2):
+            if (now - created_at) > timedelta(hours=2):
                 for user_key in r.scan_iter("user:*"):
                     links = r.lrange(user_key, 0, -1)
                     for i, link in enumerate(links):
@@ -52,7 +52,7 @@ async def shorten_url(request: UrlRequest):
         short_url=link_data['short_url'],
         long_url=request.long_url
     )
-    
+
     deactivate_expired_links()
     return {'short_url': link_data['short_url']}
 
@@ -75,10 +75,33 @@ async def get_user_links(request: UserLinksRequest):
 async def redirect(short_key: str):
     if not r.exists(short_key):
         raise HTTPException(status_code=410, detail="Ссылка неактивна")
-    r.set(f"last_accessed:{short_key}", datetime.now().isoformat())
+    now = datetime.now()
+    day_key = now.strftime("%Y-%m-%d")
+    month_key = now.strftime("%Y-%m")
+    r.hincrby(f"clicks:{short_key}:day", day_key, 1)
+    r.hincrby(f"clicks:{short_key}:month", month_key, 1)
+    r.set(f"last_accessed:{short_key}", now.isoformat())
     
     long_url = r.get(short_key)
     if not long_url:
         raise HTTPException(status_code=404)
     
     return RedirectResponse(url=long_url.decode())
+
+@router.post("/stats/clicks")
+async def get_link_clicks(request: LinkStatsRequest):
+    short_key = request.short_url.split('/')[-1]
+    user_key = get_user_key(request.email)
+    links = r.lrange(user_key, 0, -1)
+    if not any(link for link in links if json.loads(link)['short_url'] == request.short_url):
+        raise HTTPException(status_code=403, detail="Not your link")
+    day_stats = r.hgetall(f"clicks:{short_key}:day") or {}
+    month_stats = r.hgetall(f"clicks:{short_key}:month") or {}
+    def convert_bytes(data):
+        return {k.decode(): int(v.decode()) for k, v in data.items()}
+    result = {
+        'day': convert_bytes(day_stats),
+        'month': convert_bytes(month_stats)
+    }
+    logging.info(f"Stats for {short_key}: {result}")
+    return result[request.period]

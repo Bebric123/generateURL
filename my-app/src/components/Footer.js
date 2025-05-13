@@ -6,7 +6,7 @@ function Footer() {
   return (
     <footer>
         <div className='border'></div>
-        <p className="foo">2022 &#xA9 Все права защищены.</p>
+        <p className="foo">2022 Ⓒ Все права защищены.</p>
     </footer>
   )
 }
