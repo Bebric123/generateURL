@@ -6,13 +6,14 @@ function Header() {
   return (
     <header>
       <nav className="navigate">
-        <img src={logo} alt='logotip' className="logo" />
-        <p className='name'>DeGenerateURL</p>
+        <div className='logotip'>
+          <img src={logo} alt='logotip' className="logo" />
+          <p className='name'>DeGenerateURL</p>
+        </div>
         <ul className="list">
-          <li><Link class="navi" to="/">Главная</Link></li>
-          <li><Link class="navi" to="/history">История</Link>  </li>
-          <li><Link class="navi" to="/statistic">Статистика</Link>  </li>
-          <li><Link class="navi" to="/statistic">Кастомизация</Link>  </li>
+          <li><Link className="navi" to="/">Главная</Link></li>
+          <li><Link className="navi" to="/history">История</Link>  </li>
+          <li><Link className="navi" to="/statistic">Статистика</Link>  </li>
         </ul>
         
         <div className='btn-nav'>

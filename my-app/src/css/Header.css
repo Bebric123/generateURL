@@ -16,13 +16,19 @@ header {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 20px;
-    gap:20px;
+    gap:60px;
 }
   
 .logo {
     height: 60px;
     width: auto;
     transition: transform 0.3s ease;
+}
+
+.logotip{
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
   
 .logo:hover {

@@ -8,6 +8,7 @@ function HomePage() {
     const [email, setEmail] = useState('');
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [userLinks, setUserLinks] = useState([]);
+    const [error, setError] = useState(''); 
   
     useEffect(() => {
       const savedEmail = localStorage.getItem('email');
@@ -32,18 +33,36 @@ function HomePage() {
   
     const handleLogin = (e) => {
       e.preventDefault();
-      if (email) {
-        localStorage.setItem('email', email);
-        setIsLoggedIn(true);
-        fetchUserLinks(email);
+      if (!email) {
+        setError('Пожалуйста, введите email');
+        return;
       }
+      localStorage.setItem('email', email);
+      setIsLoggedIn(true);
+      fetchUserLinks(email);
+      setError('');
     };
   
     const handleSubmit = async (e) => {
       e.preventDefault();
-      if (!isLoggedIn) return;
+      
+      if (!isLoggedIn) {
+        setError('Сначала войдите в систему');
+        return;
+      }
+      
+      if (!longUrl.trim()) {
+        setError('Пожалуйста, введите ссылку для сокращения');
+        return;
+      }
+      
+      if (!longUrl.startsWith('http://') && !longUrl.startsWith('https://')) {
+        setError('Ссылка должна начинаться с http:// или https://');
+        return;
+      }
       
       try {
+        setError(''); 
         const response = await axios.post(
           'http://localhost:8000/shorten',
           { 
@@ -55,6 +74,7 @@ function HomePage() {
         fetchUserLinks(email);
       } catch (error) {
         console.error('Error:', error.response?.data);
+        setError('Ошибка при создании короткой ссылки');
       }
     };
   
@@ -71,21 +91,33 @@ function HomePage() {
                 required
               />
               <button className="btn_gen" type="submit">Войти</button>
+              {error && <div className="error-message">{error}</div>}
             </form>
           </div>
         ) : (
-        <div className="container">
-          <div className="form">
-            <form onSubmit={handleSubmit}>
-              <input type="text" value={longUrl} onChange={(e) => setLongUrl(e.target.value)} placeholder="Введите вашу ссылочку"/>
-              <input type="text" value={shortUrl} onChange={(e) => setLongUrl(e.target.value)} placeholder="Ваша короткая ссылочка"/>
-              <button className="btn_gen" type="submit">Скоротать</button>
-            </form>
+          <div className="container">
+            <div className="form">
+              <form onSubmit={handleSubmit}>
+                <input 
+                  type="text" 
+                  value={longUrl} 
+                  onChange={(e) => setLongUrl(e.target.value)} 
+                  placeholder="Введите URL (начинается с http://)"
+                />
+                <input 
+                  type="text" 
+                  value={shortUrl} 
+                  readOnly
+                  placeholder="Здесь появится короткая ссылка"
+                />
+                <button className="btn_gen" type="submit">Скоротать</button>
+                {error && <div className="error-message">{error}</div>}
+              </form>
+            </div>
           </div>
-        </div>
         )}
       </div>
     );
-  }
-  
-  export default HomePage;
+}
+
+export default HomePage;
