@@ -86,14 +86,7 @@
 }
 
 .sortable-header::after {
-  content: '↕';
   margin-left: 5px;
   font-size: 12px;
   opacity: 0.5;
-}
-
-.history{
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
 }

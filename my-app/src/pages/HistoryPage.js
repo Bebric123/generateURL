@@ -7,6 +7,8 @@ function HistoryPage() {
   const [sortedLinks, setSortedLinks] = useState([]);
   const [email, setEmail] = useState('');
   const [sortOrder, setSortOrder] = useState('desc');
+  const [activeOnly, setActiveOnly] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(null);
 
   useEffect(() => {
     const savedEmail = localStorage.getItem('email');
@@ -17,13 +19,20 @@ function HistoryPage() {
   }, []);
 
   useEffect(() => {
-    const sorted = [...userLinks].sort((a, b) => {
+    let filteredLinks = [...userLinks];
+    
+    if (activeOnly) {
+      filteredLinks = filteredLinks.filter(link => link.is_active !== false);
+    }
+    
+    const sorted = filteredLinks.sort((a, b) => {
       const dateA = new Date(a.created_at);
       const dateB = new Date(b.created_at);
       return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
     });
+    
     setSortedLinks(sorted);
-  }, [userLinks, sortOrder]);
+  }, [userLinks, sortOrder, activeOnly]);
 
   const fetchUserLinks = async (userEmail) => {
     try {
@@ -41,17 +50,20 @@ function HistoryPage() {
     setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
   };
 
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    setCopiedLink(text);
+    setTimeout(() => setCopiedLink(null), 2000);
+  };
+
+  const refreshLinks = () => {
+    fetchUserLinks(email);
+  };
+
   return (
     <div className="history-container">
-      <div className='history'>
-        <h1>История ваших ссылок</h1>
-        
-        <div className="controls">
-          <button onClick={toggleSortOrder} className="sort-button">
-            Сортировка по дате: {sortOrder === 'asc' ? '↑ Старые сначала' : '↓ Новые сначала'}
-          </button>
-        </div>
-      </div>
+      <h1>История ваших ссылок</h1>
+      
       <div className="table-container">
         <table className="links-table">
           <thead>
@@ -62,12 +74,13 @@ function HistoryPage() {
               <th onClick={toggleSortOrder} className="sortable-header">
                 Дата создания {sortOrder === 'asc' ? '↑' : '↓'}
               </th>
+              <th>Статус</th>
             </tr>
           </thead>
           <tbody>
             {sortedLinks.length > 0 ? (
               sortedLinks.map((link, index) => (
-                <tr key={index}>
+                <tr key={index} className={!link.is_active ? 'inactive-link' : ''}>
                   <td>{index + 1}</td>
                   <td className="long-url-cell">
                     <a href={link.long_url} target="_blank" rel="noopener noreferrer">
@@ -80,12 +93,17 @@ function HistoryPage() {
                     </a>
                   </td>
                   <td>{new Date(link.created_at).toLocaleString()}</td>
+                  <td>
+                    <span className={`status-badge ${link.is_active ? 'active' : 'inactive'}`}>
+                      {link.is_active ? 'Активна' : 'Неактивна'}
+                    </span>
+                  </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="4" className="no-links-message">
-                  У вас пока нет сохраненных ссылок
+                <td colSpan="6" className="no-links-message">
+                  {activeOnly ? 'Нет активных ссылок' : 'У вас пока нет сохраненных ссылок'}
                 </td>
               </tr>
             )}

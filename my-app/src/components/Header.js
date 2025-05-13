@@ -8,7 +8,7 @@ function Header() {
       <nav className="navigate">
         <div className='logotip'>
           <img src={logo} alt='logotip' className="logo" />
-          <p className='name'>DeGenerateURL</p>
+          <p className='name'>GenerateURL</p>
         </div>
         <ul className="list">
           <li><Link className="navi" to="/">Главная</Link></li>
