@@ -7,8 +7,6 @@ function HistoryPage() {
   const [sortedLinks, setSortedLinks] = useState([]);
   const [email, setEmail] = useState('');
   const [sortOrder, setSortOrder] = useState('desc');
-  const [activeOnly, setActiveOnly] = useState(false);
-  const [copiedLink, setCopiedLink] = useState(null);
 
   useEffect(() => {
     const savedEmail = localStorage.getItem('email');
@@ -21,10 +19,6 @@ function HistoryPage() {
   useEffect(() => {
     let filteredLinks = [...userLinks];
     
-    if (activeOnly) {
-      filteredLinks = filteredLinks.filter(link => link.is_active !== false);
-    }
-    
     const sorted = filteredLinks.sort((a, b) => {
       const dateA = new Date(a.created_at);
       const dateB = new Date(b.created_at);
@@ -32,7 +26,7 @@ function HistoryPage() {
     });
     
     setSortedLinks(sorted);
-  }, [userLinks, sortOrder, activeOnly]);
+  }, [userLinks, sortOrder]);
 
   const fetchUserLinks = async (userEmail) => {
     try {
@@ -48,16 +42,6 @@ function HistoryPage() {
 
   const toggleSortOrder = () => {
     setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
-  };
-
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
-    setCopiedLink(text);
-    setTimeout(() => setCopiedLink(null), 2000);
-  };
-
-  const refreshLinks = () => {
-    fetchUserLinks(email);
   };
 
   return (
@@ -102,8 +86,8 @@ function HistoryPage() {
               ))
             ) : (
               <tr>
-                <td colSpan="6" className="no-links-message">
-                  {activeOnly ? 'Нет активных ссылок' : 'У вас пока нет сохраненных ссылок'}
+                <td colSpan="5" className="no-links-message">
+                  {'У вас пока нет сохраненных ссылок'}
                 </td>
               </tr>
             )}

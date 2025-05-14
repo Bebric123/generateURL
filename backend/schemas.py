@@ -1,5 +1,4 @@
 from pydantic import BaseModel
-from typing import List, Tuple
 
 class UrlRequest(BaseModel):
     long_url: str
@@ -17,7 +16,3 @@ class LinkStatsRequest(BaseModel):
     email: str
     short_url: str
     period: str
-
-class AvailableCombinationsResponse(BaseModel):
-    combinations: List[Tuple[str, bool]]
-    available_count: int

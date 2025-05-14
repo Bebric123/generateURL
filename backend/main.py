@@ -2,7 +2,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 from routers import router
-from config import settings
 
 app = FastAPI()
 

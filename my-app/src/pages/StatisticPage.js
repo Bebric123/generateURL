@@ -66,7 +66,6 @@ function StatisticPage() {
           period: period
         }
       );
-      console.log('Received stats:', response.data);
       setStats(response.data);
     } catch (error) {
       console.error('Error fetching stats:', error.response?.data || error.message);

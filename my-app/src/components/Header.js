@@ -11,27 +11,15 @@ function Header() {
   useEffect(() => {
     const fetchCombinations = async () => {
       try {
-        const response = await fetch('http://localhost:8000/available-combinations', {
-          headers: {
-            'Accept': 'application/json',
-          }
-        });
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          const text = await response.text();
-          throw new Error(`Ожидался JSON, получен: ${contentType}. Ответ: ${text.substring(0, 100)}...`);
-        }
-
-        const data = await response.json();
-        setCombinationsData(data);
+        const response = await fetch('http://localhost:8000/available-combinations');
+        const count = await response.json();
+        setCombinationsData(count);
       } catch (err) {
-        console.error('Ошибка при загрузке данных:', err);
         setError(err.message);
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchCombinations();
   }, []);
 
@@ -55,7 +43,7 @@ function Header() {
             <div>Ошибка: {error}</div>
           ) : combinationsData ? (
             <div className="combinations-info">
-              <span>Доступно комбинаций: {combinationsData.available_count}</span>
+              <span>Доступно комбинаций: {combinationsData}</span>
             </div>
           ) : null}
           <button className="btn-header">Поддержка</button>

@@ -12,16 +12,10 @@ r = redis.Redis(
 def is_link_unique(short_key: str) -> bool:
     return not r.exists(short_key)
 
-def generate_unique_key(length: int = 6, attempts: int = 10) -> str:
-    for _ in range(attempts):
-        key = secrets.token_urlsafe(length)[:length]
-        if is_link_unique(key):
-            return key
-    raise ValueError(f"Не удалось сгенерировать уникальный ключ за {attempts} попыток")
-
-def get_available_combinations(count: int = 5, length: int = 6) -> List[Tuple[str, bool]]:
-    return [(secrets.token_urlsafe(length)[:length], is_link_unique(secrets.token_urlsafe(length)[:length])) 
-            for _ in range(count)]
+def generate_unique_key(length: int = 6) -> str:
+    key = secrets.token_urlsafe(length)[:length]
+    if is_link_unique(key):
+        return key
 
 def get_available_count() -> int:
     chars = 62 
