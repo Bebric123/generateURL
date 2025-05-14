@@ -52,7 +52,7 @@ async def get_user_links(request: UserLinksRequest):
             link_data['is_active'] = False
         
         result_links.append(link_data)
-    
+    deactivate_expired_links()
     return {"links": result_links}
 
 @router.get("/{short_key}")
@@ -70,7 +70,6 @@ async def redirect(short_key: str):
     long_url = r.get(short_key)
     if not long_url:
         raise HTTPException(status_code=404)
-    
     return RedirectResponse(url=long_url.decode())
 
 @router.post("/stats/clicks")
