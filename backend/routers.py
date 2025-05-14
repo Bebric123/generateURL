@@ -1,8 +1,9 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import RedirectResponse
-from services import r, generate_short_key, get_user_key, send_email_notification
-from schemas import UrlRequest, UserLinksRequest, LinkStatsRequest
-from config import Settings
+from services import r, get_user_key, send_email_notification
+from checker import generate_unique_key, get_available_combinations, get_available_count
+from schemas import UrlRequest, UserLinksRequest, LinkStatsRequest, AvailableCombinationsResponse
+from config import settings
 import json
 from datetime import datetime, timedelta
 import logging
@@ -15,11 +16,14 @@ def deactivate_expired_links():
         key_str = key.decode()
         if key_str.startswith('user:') or key_str.startswith(('created_at:', 'last_accessed:')):
             continue
-        last_accessed = r.get(f"last_accessed:{key_str}")
+        
         created_at = r.get(f"created_at:{key_str}")
         if created_at:
             created_at = datetime.fromisoformat(created_at.decode())
-            if (now - created_at) > timedelta(hours=2):
+            if (now - created_at) > timedelta(minutes=2):
+                r.delete(key_str)
+                r.delete(f"created_at:{key_str}")
+                r.delete(f"last_accessed:{key_str}")
                 for user_key in r.scan_iter("user:*"):
                     links = r.lrange(user_key, 0, -1)
                     for i, link in enumerate(links):
@@ -28,18 +32,18 @@ def deactivate_expired_links():
                             link_data['is_active'] = False
                             r.lset(user_key, i, json.dumps(link_data))
                 
-                logging.info(f"Marked link as inactive: {key_str}")
+                logging.info(f"Deactivated and removed link: {key_str}")
 
 @router.post("/shorten")
 async def shorten_url(request: UrlRequest):  
-    short_key = generate_short_key()
+    short_key = generate_unique_key()
     r.set(short_key, request.long_url)
     r.set(f"created_at:{short_key}", datetime.now().isoformat())
     r.set(f"last_accessed:{short_key}", datetime.now().isoformat())
 
     user_key = get_user_key(request.email)
     link_data = {
-        'short_url': f'{Settings.BASE_URL}/{short_key}',
+        'short_url': f'{settings.BASE_URL}/{short_key}',
         'long_url': request.long_url,
         'created_at': datetime.now().isoformat(),
         'is_active': True
@@ -55,6 +59,13 @@ async def shorten_url(request: UrlRequest):
 
     deactivate_expired_links()
     return {'short_url': link_data['short_url']}
+
+@router.get("/available-combinations", response_model=AvailableCombinationsResponse)
+async def available_combinations(count: int = 5):
+    return {
+        "combinations": get_available_combinations(count),
+        "available_count": get_available_count()
+    }
 
 @router.post("/user/links")
 async def get_user_links(request: UserLinksRequest):
@@ -75,6 +86,15 @@ async def get_user_links(request: UserLinksRequest):
 async def redirect(short_key: str):
     if not r.exists(short_key):
         raise HTTPException(status_code=410, detail="Ссылка неактивна")
+    
+    for user_key in r.scan_iter("user:*"):
+        links = r.lrange(user_key, 0, -1)
+        for link in links:
+            link_data = json.loads(link)
+            if link_data.get('short_url', '').endswith(f"/{short_key}"):
+                if not link_data.get('is_active', True):
+                    raise HTTPException(status_code=410, detail="Ссылка неактивна")
+                break
     now = datetime.now()
     day_key = now.strftime("%Y-%m-%d")
     month_key = now.strftime("%Y-%m")
