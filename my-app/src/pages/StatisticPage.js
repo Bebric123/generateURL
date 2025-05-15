@@ -29,12 +29,14 @@ function StatisticPage() {
   const [period, setPeriod] = useState('day');
   const [stats, setStats] = useState(null);
   const [email, setEmail] = useState('');
+  const [analytics, setAnalytics] = useState(null);
 
   useEffect(() => {
     const savedEmail = localStorage.getItem('email');
     if (savedEmail) {
       setEmail(savedEmail);
       fetchUserLinks(savedEmail);
+      fetchAnalytics(savedEmail);
     }
   }, []);
 
@@ -56,6 +58,36 @@ function StatisticPage() {
     }
   };
 
+  const fetchAnalytics = async (userEmail) => {
+  try {
+    const response = await axios.post(
+      'http://localhost:8000/analytics/user',
+      { email: userEmail },
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    setAnalytics({
+      useful_domen: response.data.useful_domen || "Нет данных",
+      one_use_links: response.data.one_use_links || 0,
+      max_redirect_link: response.data.max_redirect_link || 0,
+      max_all_redirect: response.data.max_all_redirect || 0
+    });
+    
+  } catch (error) {
+    console.error('Error fetching analytics:', error);
+    setAnalytics({
+      useful_domen: "Ошибка загрузки",
+      one_use_links: 0,
+      max_redirect_link: 0,
+      max_all_redirect: 0
+    });
+  }
+};
+
   const fetchLinkStats = async () => {
     try {
       const response = await axios.post(
@@ -70,9 +102,9 @@ function StatisticPage() {
     } catch (error) {
       console.error('Error fetching stats:', error.response?.data || error.message);
     }
-};
+  };
 
-const prepareChartData = () => {
+  const prepareChartData = () => {
     if (!stats) return null;
     const sortedEntries = Object.entries(stats)
       .sort(([dateA], [dateB]) => new Date(dateA) - new Date(dateB));
@@ -97,13 +129,36 @@ const prepareChartData = () => {
         }
       ]
     };
-};
+  };
 
   const chartData = prepareChartData();
 
   return (
     <div className="statistic-container">
       <h1>Статистика переходов</h1>
+      {analytics && (
+        <div className="general-analytics">
+          <h2>Общая статистика</h2>
+          <div className="analytics-grid">
+            <div className="analytics-card">
+              <h3>Самый популярный домен</h3>
+              <p>{analytics.useful_domen || 'Нет данных'}</p>
+            </div>
+            <div className="analytics-card">
+              <h3>Одноразовые ссылки</h3>
+              <p>{analytics.one_use_links}</p>
+            </div>
+            <div className="analytics-card">
+              <h3>Макс. переходов на ссылку</h3>
+              <p>{analytics.max_redirect_link}</p>
+            </div>
+            <div className="analytics-card">
+              <h3>Всего переходов</h3>
+              <p>{analytics.max_all_redirect}</p>
+            </div>
+          </div>
+        </div>
+      )}
       
       <div className="controls">
         <select 

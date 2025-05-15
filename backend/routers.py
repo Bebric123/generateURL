@@ -1,17 +1,17 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import RedirectResponse
-from services import r, get_user_key, send_email_notification, deactivate_expired_links
-from checker import generate_unique_key, get_available_count
-from schemas import UrlRequest, UserLinksRequest, LinkStatsRequest
+from services import r, get_user_key, send_email_notification, deactivate_expired_links, get_analitic
+from checker import generate_unique_key
+from schemas import UrlRequest, UserLinksRequest, LinkStatsRequest, AnaliticLinks
 from config import settings
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 import logging
 
 router = APIRouter()
 
 @router.post("/shorten")
-async def shorten_url(request: UrlRequest):  
+async def shorten_url(request: UrlRequest):
     short_key = generate_unique_key()
     r.set(short_key, request.long_url)
     r.set(f"created_at:{short_key}", datetime.now().isoformat())
@@ -36,9 +36,23 @@ async def shorten_url(request: UrlRequest):
     deactivate_expired_links()
     return {'short_url': link_data['short_url']}
 
-@router.get("/available-combinations")
-async def available_combinations():
-    return get_available_count()
+@router.post("/analytics/user")
+async def get_user_analytics(request: AnaliticLinks):
+    if not request.email:
+        raise HTTPException(status_code=400, detail="Email is required")
+    
+    user_key = get_user_key(request.email)
+    analytics = get_analitic(user_key)
+    
+    if not analytics:
+        return {
+            "useful_domen": "No data",
+            "one_use_links": 0,
+            "max_redirect_link": 0,
+            "max_all_redirect": 0
+        }
+    
+    return analytics
 
 @router.post("/user/links")
 async def get_user_links(request: UserLinksRequest):
@@ -77,8 +91,6 @@ async def get_link_clicks(request: LinkStatsRequest):
     short_key = request.short_url.split('/')[-1]
     user_key = get_user_key(request.email)
     links = r.lrange(user_key, 0, -1)
-    if not any(link for link in links if json.loads(link)['short_url'] == request.short_url):
-        raise HTTPException(status_code=403, detail="Not your link")
     day_stats = r.hgetall(f"clicks:{short_key}:day") or {}
     month_stats = r.hgetall(f"clicks:{short_key}:month") or {}
     def convert_bytes(data):

@@ -70,3 +70,51 @@ def deactivate_expired_links():
                             r.lset(user_key, i, json.dumps(link_data))
                 
                 logging.info(f"Deactivated inactive link: {key_str} (last accessed: {last_accessed})")
+                return True
+            
+def get_analitic(user_key):
+    try:
+        links = r.lrange(user_key, 0, -1)
+        if not links:
+            return None
+        
+        domain_counts = {}
+        one_use_links = 0
+        max_redirect_link = 0
+        max_all_redirect = 0
+        
+        for link in links:
+            try:
+                link_data = json.loads(link)
+                short_key = link_data['short_url'].split('/')[-1]
+                day_stats = r.hgetall(f"clicks:{short_key}:day") or {}
+                month_stats = r.hgetall(f"clicks:{short_key}:month") or {}
+                total_clicks = sum(int(v.decode()) for v in day_stats.values()) if day_stats else 0
+                
+                max_all_redirect += total_clicks
+                max_redirect_link = max(max_redirect_link, total_clicks)
+                
+                if total_clicks == 1:
+                    one_use_links += 1
+                long_url = link_data.get('long_url', '')
+                if long_url:
+                    try:
+                        domain = long_url.split('/')[2].replace('www.', '')
+                        domain_counts[domain] = domain_counts.get(domain, 0) + total_clicks
+                    except IndexError:
+                        continue
+            except Exception as e:
+                print(f"Error processing link {link}: {e}")
+                continue
+        
+        useful_domen = max(domain_counts.items(), key=lambda x: x[1], default=("", 0))[0]
+        
+        return {
+            "useful_domen": useful_domen,
+            "one_use_links": one_use_links,
+            "max_redirect_link": max_redirect_link,
+            "max_all_redirect": max_all_redirect
+        }
+    except Exception as e:
+        print(f"Error in get_analitic: {e}")
+        return None

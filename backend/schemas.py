@@ -16,3 +16,6 @@ class LinkStatsRequest(BaseModel):
     email: str
     short_url: str
     period: str
+
+class AnaliticLinks(BaseModel):
+    email: str

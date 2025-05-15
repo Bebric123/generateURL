@@ -1,7 +1,6 @@
 import secrets
 import redis
 from config import settings
-from typing import List, Tuple
 
 r = redis.Redis(
     host=settings.REDIS_HOST,
