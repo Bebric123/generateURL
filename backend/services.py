@@ -1,6 +1,8 @@
 import redis
-import secrets
+from urllib.parse import urlparse
+import re
 import hashlib
+from html import escape
 import json
 import smtplib
 from email.mime.text import MIMEText
@@ -15,11 +17,20 @@ r = redis.Redis(
     db=settings.REDIS_DB
 )
 
-def generate_short_key():
-    return secrets.token_urlsafe(5)[:8]
+def is_valid_email(email: str) -> bool:
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(pattern, email) is not None
 
 def get_user_key(email: str) -> str:
+    if not is_valid_email(email):
+        raise ValueError("Invalid email format")
     return f"user:{hashlib.sha256(email.encode()).hexdigest()}"
+
+def sanitize_url(url: str) -> str:
+    parsed = urlparse(url)
+    if not parsed.scheme or not parsed.netloc:
+        raise ValueError("Invalid URL format")
+    return url
 
 def send_email_notification(email_to: str, short_url: str, long_url: str):
     try:
@@ -30,9 +41,8 @@ def send_email_notification(email_to: str, short_url: str, long_url: str):
         
         body = f"""
         <h1>Ваша ссылка была сокращена!</h1>
-        <p><strong>Оригинальная ссылка:</strong> {long_url}</p>
-        <p><strong>Сокращенная ссылка:</strong> <a href="{short_url}">{short_url}</a></p>
-        <p>Дата создания: {datetime.now().strftime('%Y-%m-%d %H:%M')}</p>
+        <p><strong>Оригинальная ссылка:</strong> {escape(long_url)}</p>
+        <p><strong>Сокращенная ссылка:</strong> <a href="{escape(short_url)}">{escape(short_url)}</a></p>
         """
         
         msg.attach(MIMEText(body, 'html'))
@@ -72,49 +82,56 @@ def deactivate_expired_links():
                 logging.info(f"Deactivated inactive link: {key_str} (last accessed: {last_accessed})")
                 return True
             
+def safe_json_loads(data: str):
+    try:
+        return json.loads(data)
+    except json.JSONDecodeError:
+        return None
+    
 def get_analitic(user_key):
     try:
+        if not r.exists(user_key):
+            return None
+
         links = r.lrange(user_key, 0, -1)
         if not links:
             return None
         
+        analytics = {
+            "useful_domen": "",
+            "one_use_links": 0,
+            "max_redirect_link": 0,
+            "max_all_redirect": 0
+        }
+        
         domain_counts = {}
-        one_use_links = 0
-        max_redirect_link = 0
-        max_all_redirect = 0
         
         for link in links:
             try:
                 link_data = json.loads(link)
                 short_key = link_data['short_url'].split('/')[-1]
+
                 day_stats = r.hgetall(f"clicks:{short_key}:day") or {}
-                month_stats = r.hgetall(f"clicks:{short_key}:month") or {}
-                total_clicks = sum(int(v.decode()) for v in day_stats.values()) if day_stats else 0
-                
-                max_all_redirect += total_clicks
-                max_redirect_link = max(max_redirect_link, total_clicks)
-                
-                if total_clicks == 1:
-                    one_use_links += 1
-                long_url = link_data.get('long_url', '')
-                if long_url:
+                total_clicks = sum(int(v) for v in day_stats.values())
+
+                analytics['max_all_redirect'] += total_clicks
+                analytics['max_redirect_link'] = max(analytics['max_redirect_link'], total_clicks)
+                analytics['one_use_links'] += 1 if total_clicks == 1 else 0
+                if 'long_url' in link_data:
                     try:
-                        domain = long_url.split('/')[2].replace('www.', '')
+                        domain = link_data['long_url'].split('/')[2].replace('www.', '')
                         domain_counts[domain] = domain_counts.get(domain, 0) + total_clicks
-                    except IndexError:
+                    except (IndexError, AttributeError):
                         continue
-            except Exception as e:
-                print(f"Error processing link {link}: {e}")
+                        
+            except json.JSONDecodeError:
                 continue
+            
+        if domain_counts:
+            analytics['useful_domen'] = max(domain_counts.items(), key=lambda x: x[1])[0]
         
-        useful_domen = max(domain_counts.items(), key=lambda x: x[1], default=("", 0))[0]
+        return analytics
         
-        return {
-            "useful_domen": useful_domen,
-            "one_use_links": one_use_links,
-            "max_redirect_link": max_redirect_link,
-            "max_all_redirect": max_all_redirect
-        }
     except Exception as e:
-        print(f"Error in get_analitic: {e}")
+        print(f"Error in analytics calculation: {e}")
         return None

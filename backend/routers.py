@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import RedirectResponse
-from services import r, get_user_key, send_email_notification, deactivate_expired_links, get_analitic
+from services import r, get_user_key, send_email_notification, deactivate_expired_links, get_analitic, safe_json_loads
 from checker import generate_unique_key
 from schemas import UrlRequest, UserLinksRequest, LinkStatsRequest, AnaliticLinks
 from config import settings
@@ -60,7 +60,9 @@ async def get_user_links(request: UserLinksRequest):
     links = r.lrange(user_key, 0, -1)
     result_links = []
     for link in links:
-        link_data = json.loads(link)
+        link_data = safe_json_loads(link)
+        if not link_data:
+            continue
         short_key = link_data['short_url'].split('/')[-1]
         if not r.exists(short_key):
             link_data['is_active'] = False
