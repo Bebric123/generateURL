@@ -17,12 +17,3 @@ def generate_unique_key(length: int = 6, max_attempts: int = 100) -> str:
         if is_link_unique(key):
             return key
     raise ValueError("Failed to generate unique key")
-
-def get_available_count() -> int:
-    chars = 62 
-    length = 6
-    total_combinations = chars ** length
-    used_keys = sum(1 for key in r.scan_iter() 
-                   if not key.decode().startswith(('created_at:', 'last_accessed:', 'user:', 'clicks:')))
-    
-    return max(0, total_combinations - used_keys)

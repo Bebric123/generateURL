@@ -1,7 +1,5 @@
 import unittest
-from unittest.mock import patch, MagicMock
 import services
-import checker
 from datetime import datetime, timedelta
 import json
 import redis

@@ -1,6 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import RedirectResponse
-from services import r, get_user_key, send_email_notification, deactivate_expired_links, get_analitic, safe_json_loads
+from services import r, get_user_key, send_email_notification, safe_json_loads, sanitize_url
+from analitic import get_analitic
+from activ_link import deactivate_expired_links
 from checker import generate_unique_key
 from schemas import UrlRequest, UserLinksRequest, LinkStatsRequest, AnaliticLinks
 from config import settings
@@ -12,8 +14,12 @@ router = APIRouter()
 
 @router.post("/shorten")
 async def shorten_url(request: UrlRequest):
+    try:
+        sanitized_url = sanitize_url(request.long_url)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     short_key = generate_unique_key()
-    r.set(short_key, request.long_url)
+    r.set(short_key, sanitized_url)
     r.set(f"created_at:{short_key}", datetime.now().isoformat())
     r.set(f"last_accessed:{short_key}", datetime.now().isoformat())
 
@@ -91,8 +97,6 @@ async def redirect(short_key: str):
 @router.post("/stats/clicks")
 async def get_link_clicks(request: LinkStatsRequest):
     short_key = request.short_url.split('/')[-1]
-    user_key = get_user_key(request.email)
-    links = r.lrange(user_key, 0, -1)
     day_stats = r.hgetall(f"clicks:{short_key}:day") or {}
     month_stats = r.hgetall(f"clicks:{short_key}:month") or {}
     def convert_bytes(data):
